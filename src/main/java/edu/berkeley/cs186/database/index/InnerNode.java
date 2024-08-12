@@ -9,6 +9,7 @@ import edu.berkeley.cs186.database.memory.BufferManager;
 import edu.berkeley.cs186.database.memory.Page;
 import edu.berkeley.cs186.database.table.RecordId;
 
+import javax.xml.crypto.Data;
 import java.nio.ByteBuffer;
 import java.util.*;
 
@@ -81,7 +82,10 @@ class InnerNode extends BPlusNode {
     @Override
     public LeafNode get(DataBox key) {
         // TODO(proj2): implement
-
+        if (keys.size() > 0){
+            int targetIdx = numLessThanEqual(key, keys);
+            return getChild(targetIdx).get(key);
+        }
         return null;
     }
 
@@ -90,18 +94,49 @@ class InnerNode extends BPlusNode {
     public LeafNode getLeftmostLeaf() {
         assert(children.size() > 0);
         // TODO(proj2): implement
-
-        return null;
+        return getChild(0).getLeftmostLeaf();
     }
 
     // See BPlusNode.put.
     @Override
     public Optional<Pair<DataBox, Long>> put(DataBox key, RecordId rid) {
         // TODO(proj2): implement
+        int idx = InnerNode.numLessThanEqual(key, keys);
 
+        BPlusNode child = getChild(idx);
+        Optional<Pair<DataBox, Long>> pair = child.put(key, rid);
+        if(!pair.isPresent()){
+            sync();
+            return Optional.empty();
+        }
+        else {
+            Pair<DataBox, Long> keyRidPair = pair.get();
+        }
         return Optional.empty();
     }
 
+    private Optional<Pair<DataBox, Long>> split(DataBox key, Long child){
+        int idx = numLessThan(key, keys);
+        keys.add(idx, key);
+        children.add(idx + 1, child);
+
+        if(keys.size() <= 2 * metadata.getOrder()){
+            sync();
+            return Optional.empty();
+        }
+        int order = metadata.getOrder();
+        DataBox newKey = keys.get(metadata.getOrder());
+
+        List<DataBox> rightKeys = keys.subList(order + 1, keys.size());
+        List<Long> rightChild = children.subList(order + 1, children.size());
+
+        //update the original innernode as the left child
+        this.keys = keys.subList(0, order);
+        this.children = children.subList(0, order + 1);
+        InnerNode newRight = new InnerNode(metadata, bufferManager, rightKeys, rightChild, treeContext);
+        sync();
+        return Optional.of(new Pair(newKey, newRight.getPage().getPageNum()));
+    }
     // See BPlusNode.bulkLoad.
     @Override
     public Optional<Pair<DataBox, Long>> bulkLoad(Iterator<Pair<DataBox, RecordId>> data,
@@ -115,7 +150,9 @@ class InnerNode extends BPlusNode {
     @Override
     public void remove(DataBox key) {
         // TODO(proj2): implement
-
+        int idx = InnerNode.numLessThanEqual(key, keys);
+        BPlusNode child = getChild(idx);
+        child.remove(key);
         return;
     }
 
