@@ -97,25 +97,7 @@ class InnerNode extends BPlusNode {
         return getChild(0).getLeftmostLeaf();
     }
 
-    // See BPlusNode.put.
-    @Override
-    public Optional<Pair<DataBox, Long>> put(DataBox key, RecordId rid) {
-        // TODO(proj2): implement
-        int idx = InnerNode.numLessThanEqual(key, keys);
-
-        BPlusNode child = getChild(idx);
-        Optional<Pair<DataBox, Long>> pair = child.put(key, rid);
-        if(!pair.isPresent()){
-            sync();
-            return Optional.empty();
-        }
-        else {
-            Pair<DataBox, Long> keyRidPair = pair.get();
-        }
-        return Optional.empty();
-    }
-
-    private Optional<Pair<DataBox, Long>> split(DataBox key, Long child){
+    private Optional<Pair<DataBox, Long>> split2(DataBox key, Long child){
         int idx = numLessThan(key, keys);
         keys.add(idx, key);
         children.add(idx + 1, child);
@@ -124,19 +106,39 @@ class InnerNode extends BPlusNode {
             sync();
             return Optional.empty();
         }
-        int order = metadata.getOrder();
         DataBox newKey = keys.get(metadata.getOrder());
 
-        List<DataBox> rightKeys = keys.subList(order + 1, keys.size());
-        List<Long> rightChild = children.subList(order + 1, children.size());
+        List<DataBox> rightKeys = keys.subList( metadata.getOrder() + 1, keys.size());
+        List<Long> rightChild = children.subList( metadata.getOrder() + 1, children.size());
 
         //update the original innernode as the left child
-        this.keys = keys.subList(0, order);
-        this.children = children.subList(0, order + 1);
+        this.keys = keys.subList(0,  metadata.getOrder());
+        this.children = children.subList(0,  metadata.getOrder() + 1);
         InnerNode newRight = new InnerNode(metadata, bufferManager, rightKeys, rightChild, treeContext);
+
         sync();
         return Optional.of(new Pair(newKey, newRight.getPage().getPageNum()));
     }
+    // See BPlusNode.put.
+    @Override
+    public Optional<Pair<DataBox, Long>> put(DataBox key, RecordId rid) {
+        // TODO(proj2): implement
+        int idx = InnerNode.numLessThanEqual(key, keys);
+
+        BPlusNode child = getChild(idx);
+        Optional<Pair<DataBox, Long>> pair = child.put(key, rid);
+        if(!pair.isPresent()) {
+            sync();
+            return pair;
+        }
+        Pair<DataBox, Long> keyRidPair = pair.get();
+        DataBox newKey =keyRidPair.getFirst();
+        Long newChild = keyRidPair.getSecond();
+        return split2(newKey,newChild);
+
+    }
+
+
     // See BPlusNode.bulkLoad.
     @Override
     public Optional<Pair<DataBox, Long>> bulkLoad(Iterator<Pair<DataBox, RecordId>> data,

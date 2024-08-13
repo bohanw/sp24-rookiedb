@@ -203,7 +203,7 @@ public class BPlusTree {
 
         // TODO(proj2): Return a BPlusTreeIterator.
 
-        return new BPlusTreeIterator();
+        return new BPlusTreeIterator(root.getLeftmostLeaf());
     }
 
     /**
@@ -236,7 +236,7 @@ public class BPlusTree {
 
         // TODO(proj2): Return a BPlusTreeIterator.
 
-        return new BPlusTreeIterator(key);
+        return new BPlusTreeIterator(root.get(key), key);
     }
 
     /**
@@ -261,7 +261,7 @@ public class BPlusTree {
         if(pair.isPresent()){
             List<DataBox> keys = new ArrayList<>();
             List<Long> children = new ArrayList<>();
-            keys.add(key);
+            keys.add(pair.get().getFirst());
             children.add(root.getPage().getPageNum());
             children.add(pair.get().getSecond());
             updateRoot(new InnerNode(metadata, bufferManager, keys, children, lockContext));
@@ -434,13 +434,13 @@ public class BPlusTree {
         private LeafNode currNode;
         private Iterator<RecordId> currIterator;
 
-        public BPlusTreeIterator(){
-            currNode = root.getLeftmostLeaf();
+        public BPlusTreeIterator(LeafNode node){
+            currNode = node;
             currIterator = currNode.scanAll();
         }
 
-        public BPlusTreeIterator(DataBox key){
-            currNode = root.getLeftmostLeaf();
+        public BPlusTreeIterator(LeafNode node, DataBox key){
+            currNode = node;
             currIterator = currNode.scanGreaterEqual(key);
         }
 

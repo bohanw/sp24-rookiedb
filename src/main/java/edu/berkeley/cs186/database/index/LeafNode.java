@@ -174,15 +174,16 @@ class LeafNode extends BPlusNode {
             return Optional.empty();
         }
         else {
-           List<DataBox> rightKeys = keys.subList(metadata.getOrder(), keys.size());
-           List<RecordId> rightRids = rids.subList(metadata.getOrder(), rids.size());
+           List<DataBox> rightKeys = keys.subList(metadata.getOrder() , keys.size());
+           List<RecordId> rightRids = rids.subList(metadata.getOrder() , rids.size());
 
            this.keys = keys.subList(0, metadata.getOrder());
            this.rids = rids.subList(0, metadata.getOrder());
            LeafNode newRightSib = new LeafNode(metadata,bufferManager,rightKeys, rightRids, rightSibling, treeContext);
            this.rightSibling = Optional.of(newRightSib.getPage().getPageNum());
            sync();
-           return Optional.of(new Pair(rightKeys, newRightSib.getPage().getPageNum()));
+
+           return Optional.of(new Pair(rightKeys.get(0), newRightSib.getPage().getPageNum()));
         }
     }
 

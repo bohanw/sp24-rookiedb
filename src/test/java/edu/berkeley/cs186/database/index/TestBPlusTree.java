@@ -171,7 +171,7 @@ public class TestBPlusTree {
         String l = "((4 (4 4)))";
         String r = "((6 (6 6)) (9 (9 9)))";
         assertEquals(String.format("(%s 6 %s)", l, r), tree.toSexp());
-
+        System.out.println(tree.toSexp());
         //     (6)
         //    /   \
         // (2 4) (6 9)
@@ -179,6 +179,7 @@ public class TestBPlusTree {
         l = "((2 (2 2)) (4 (4 4)))";
         r = "((6 (6 6)) (9 (9 9)))";
         assertEquals(String.format("(%s 6 %s)", l, r), tree.toSexp());
+        System.out.println(tree.toSexp());
 
         //      (6 7)
         //     /  |  \
@@ -188,6 +189,7 @@ public class TestBPlusTree {
         String m = "((6 (6 6)))";
         r = "((7 (7 7)) (9 (9 9)))";
         assertEquals(String.format("(%s 6 %s 7 %s)", l, m, r), tree.toSexp());
+        System.out.println(tree.toSexp());
 
         //         (7)
         //        /   \
