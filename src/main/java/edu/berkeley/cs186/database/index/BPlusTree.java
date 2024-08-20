@@ -296,8 +296,17 @@ public class BPlusTree {
         // Note: You should NOT update the root variable directly.
         // Use the provided updateRoot() helper method to change
         // the tree's root if the old root splits.
-
-        return;
+        while(data.hasNext()){
+            Optional<Pair<DataBox, Long>> pair = root.bulkLoad(data, fillFactor);
+            if(pair.isPresent()){
+                List<DataBox> keys = new ArrayList<>();
+                List<Long> children = new ArrayList<>();
+                keys.add(pair.get().getFirst());
+                children.add(root.getPage().getPageNum());
+                children.add(pair.get().getSecond());
+                updateRoot(new InnerNode(metadata, bufferManager, keys, children, lockContext));
+            }
+        }
     }
 
     /**

@@ -97,7 +97,7 @@ class InnerNode extends BPlusNode {
         return getChild(0).getLeftmostLeaf();
     }
 
-    private Optional<Pair<DataBox, Long>> split2(DataBox key, Long child){
+    private Optional<Pair<DataBox, Long>> split(DataBox key, Long child){
         int idx = numLessThan(key, keys);
         keys.add(idx, key);
         children.add(idx + 1, child);
@@ -134,18 +134,49 @@ class InnerNode extends BPlusNode {
         Pair<DataBox, Long> keyRidPair = pair.get();
         DataBox newKey =keyRidPair.getFirst();
         Long newChild = keyRidPair.getSecond();
-        return split2(newKey,newChild);
+        return split(newKey,newChild);
 
     }
 
 
+    /**
+     *
+     *      * 2. Inner nodes should repeatedly try to bulk load the rightmost child
+     *      * until either the inner node is full (in which case it should split)
+     *      * or there is no more data.
+     *      *
+     *      * fillFactor should ONLY be used for determining how full leaf nodes are
+     *      * (not inner nodes), and calculations should round up, i.e. with d=5
+     *      * and fillFactor=0.75, leaf nodes should be 8/10 full.
+     *      *
+     *      * You can assume that 0 < fillFactor <= 1 for testing purposes, and that
+     *      * a fill factor outside of that range will result in undefined behavior
+     *      * (you're free to handle those cases however you like).
+     * @param data
+     * @param fillFactor
+     * @return
+     */
     // See BPlusNode.bulkLoad.
     @Override
     public Optional<Pair<DataBox, Long>> bulkLoad(Iterator<Pair<DataBox, RecordId>> data,
             float fillFactor) {
         // TODO(proj2): implement
-
-        return Optional.empty();
+        BPlusNode rightMost = getChild(children.size() - 1);
+        Optional<Pair<DataBox, Long>> pair = rightMost.bulkLoad(data, fillFactor);
+        if(!pair.isPresent()){
+            return pair;
+        }
+        else {
+            DataBox splitKey = pair.get().getFirst();
+            Long child = pair.get().getSecond();
+            Optional<Pair<DataBox, Long>> splitNode = split(splitKey, child);
+            if(!splitNode.isPresent()){
+                return bulkLoad(data, fillFactor);
+            }
+            else {
+                return splitNode;
+            }
+        }
     }
 
     // See BPlusNode.remove.
